@@ -1,40 +1,589 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
 
-		<title>reveal.js</title>
+        <title>Async js</title>
 
-		<link rel="stylesheet" href="dist/reset.css">
-		<link rel="stylesheet" href="dist/reveal.css">
-		<link rel="stylesheet" href="dist/theme/black.css">
+        <link rel="stylesheet" href="dist/reset.css" />
+        <link rel="stylesheet" href="dist/reveal.css" />
+        <link rel="stylesheet" href="dist/theme/black.css" />
 
-		<!-- Theme used for syntax highlighted code -->
-		<link rel="stylesheet" href="plugin/highlight/monokai.css">
-	</head>
-	<body>
-		<div class="reveal">
-			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
-			</div>
-		</div>
+        <!-- Theme used for syntax highlighted code -->
+        <link rel="stylesheet" href="plugin/highlight/monokai.css" />
+    </head>
+    <body>
+        <div class="reveal">
+            <div class="slides">
+                <section>Асинхронный JavaScript</section>
 
-		<script src="dist/reveal.js"></script>
-		<script src="plugin/notes/notes.js"></script>
-		<script src="plugin/markdown/markdown.js"></script>
-		<script src="plugin/highlight/highlight.js"></script>
-		<script>
-			// More info about initialization & config:
-			// - https://revealjs.com/initialization/
-			// - https://revealjs.com/config/
-			Reveal.initialize({
-				hash: true,
+                <section class="highlight-red">
+                    JavaScript — это
+                    <span class="fragment highlight-red">однопоточный</span>
+                    язык программирования
+                </section>
 
-				// Learn about plugins: https://revealjs.com/plugins/
-				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
-			});
-		</script>
-	</body>
+                <section>
+                    <section>Как работает синхронный код?</section>
+
+                    <section>
+                        Цикл событий Event Loop
+                        <img
+                            class="r-stretch"
+                            src="./assets/eventloopconcept.webp"
+                        />
+                    </section>
+
+                    <section>
+                        <pre>
+                            <code data-trim data-line-numbers="1-9|9|4-8|5|6|1-3|2|7|0">
+                                function second() {
+                                    console.log('Hi from second!');
+                                }
+                                function first() {
+                                    console.log('First Hi!');
+                                    second();
+                                    console.log('The End');
+                                }
+                                first();                            
+                            </code>
+                        </pre>
+                    </section>
+
+                    <section>
+                        <img class="r-stretch" src="./assets/synccode.gif" />
+                        <a href="http://latentflip.com/loupe">Loupe</a>
+                    </section>
+                </section>
+
+                <section>
+                    <section>
+                        Блокируем поток
+                        <pre><code data-trim>
+                            const processImage = (image) => {
+                                /**
+                                 * Выполняем обработку изображения
+                                 **/
+                                console.log('Image processed');
+                            };
+                            const networkRequest = (url) => {
+                                /**
+                                 * Обращаемся к некоторому сетевому ресурсу
+                                 **/
+                                return someData;
+                            };
+                            const greeting = () => {
+                                console.log('Hello World');
+                            };
+                            processImage(logo.jpg);
+                            networkRequest('www.somerandomurl.com');
+                            greeting();
+                        </code></pre>
+                    </section>
+                </section>
+
+                <section>
+                    <section>Так какое же решение?</section>
+
+                    <section>
+                        <p>Концепции</p>
+                        <ul>
+                            <li>Callback - функция обратного вызова</li>
+                            <li>Promise</li>
+                            <li>Async/await</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <pre><code data-trim>
+                            processImage(logo.jpg, () => {
+                                console.log('Image processed');
+                            });
+                            networkRequest('www.somerandomurl.com', () => {
+                                console.log('Some data');
+                            });
+                            greeting();                            
+                        </code></pre>
+                    </section>
+                </section>
+
+                <section>
+                    <section>Проблемы колбэков</section>
+                    <section>
+                        <p>Callback hell</p>
+                        <pre><code data-trim>
+                            fetchUser(id, () => {
+                                fetchRole(user, () => {
+                                    fetchToken(role, () => {
+                                        fetchAccess(token, () => {
+                                            // Ура! Теперь можно поработать с данными!
+                                        })
+                                    })
+                                })
+                            })
+                      </code></pre>
+                    </section>
+
+                    <section>
+                        <pre><code data-trim>
+                            A(() => {
+                                C()
+                            
+                                D(() => {
+                                    F()
+                                })
+                            
+                                E()
+                            })
+                            B()
+                      </code></pre>
+                        <p>А в каком порядке выполнится код?</p>
+                        <p class="fragment">A -> B -> C -> D -> F-> E</p>
+                        <p class="fragment">A -> C -> D -> F -> E-> B</p>
+                        <p class="fragment">A -> B -> C -> D -> F-> E</p>
+                    </section>
+
+                    <section>
+                        <pre><code data-trim>
+                            step1((error, data) => {
+                                if (error) {
+                                    // отменить этап №1
+                                }
+                            
+                                step2((error, data) => {
+                                    if (error) {
+                                        // отменить этап №2, затем этап №1
+                                    }
+                                })
+                            })
+                      </code></pre>
+                        <p>Жесткая сцепленность - тяжелая обработка ошибок</p>
+                    </section>
+
+                    <section>
+                        <pre><code data-trim>
+                            thirdPartyCode(callback)
+                      </code></pre>
+                        <p>
+                            Проблема доверия - инверсия управления другой
+                            библиотекой
+                        </p>
+                    </section>
+                </section>
+
+                <section>
+                    <section>
+                        Promise
+                        <img class="r-stretch" src="./assets/promise.jpg" />
+                    </section>
+                    
+                    <section>
+                        <p>Синтаксис создания</p>
+                        <p>
+                            При помощи оператора new в конструктор передается
+                            функция
+                        </p>
+                        <pre><code data-trim>
+                            let promise = new Promise(function (resolve, reject) {
+                                // функция-исполнитель (executor)
+                            })
+                        </code></pre>
+                        <p>
+                            resolve и reject - это функции которые выставляют
+                            промис на выполнение или на отказ
+                        </p>
+                    </section>
+
+                    <section>
+                        <p>Объект promise, возвращаемый конструктором new Promise</p>
+                        <img class="r-stretch" src="./assets/promiseobject.svg" />
+                    </section>
+
+                    <section>
+                        <pre><code data-trim>
+                            let promise1 = new Promise(function (resolve, reject) {
+                                resolve('Я результат выполнения!')
+                            })
+                            let promise2 = new Promise(function (resolve, reject) {
+                                reject('А я причина отказа!')
+                            })
+                        </code></pre>
+                        <p>
+                            Внутри вызываем или resolve / reject
+                            
+                        </p>
+                        <p>* Принимают только 1 арумент</p>
+                    </section>
+
+                    <section>
+                        <p>Как получить результат выполнения промиса?</p>
+                        <pre><code data-trim>
+                            let promise = new Promise(function (resolve, reject) {
+                                resolve('Я результат выполнения!')
+                            })
+                            
+                            promise === 'Я результат выполнения!' // false
+                            console.log(promise) 
+                            // Promise {&lt;fulfilled&gt;: 'Я результат выполнения!'} 
+                        </code></pre>
+                    </section>
+
+                    <section>
+                        <p>Обработка выполнения then/catch</p>
+                        <pre><code data-trim>
+                            let promise = new Promise(function (resolve, reject) {
+                                resolve('Я результат выполнения!')
+                            })
+                            
+                            promise.then((result) => {
+                                result === 'Я результат выполнения!' // true
+                            });
+                        </code></pre>
+                        <pre><code data-trim>
+                            let promise = new Promise(function (resolve, reject) {
+                                reject('Ошибка!')
+                            })
+                            
+                            promise.catch((error) => {
+                                error === 'Ошибка!' // true
+                            });
+                        </code></pre>
+                    </section>
+                    
+                    <section>
+                        <p>Немного цикла событий</p>
+                        <pre><code data-trim data-line-numbers="0|1|4|8|15|13|12|0">
+                            console.log(1)
+
+                            let promise1 = new Promise((resolve) => {
+                                console.log(2)
+                                setTimeout(resolve, 1000, 'thousand');
+                            })
+                            let promise2 = new Promise((resolve) => {
+                                console.log(3)
+                                setTimeout(resolve, 0, 'zero');
+                            })
+
+                            promise1.then((val) => console.log(val)) // thousand
+                            promise2.then((val) => console.log(val)) // zero
+
+                            console.log(4);
+                        </code></pre>
+                        <p class="fragment">1 - 2 - 3 - 4 - zero - thousand</p>
+                    </section>
+
+                    <section>
+                        <p>then обрабатывает выполнение и/или отказ</p>
+                        <pre><code data-trim>
+                            promise.then(
+                                (result) => {
+                                    console.log('Результат')
+                                },
+                                (error) => {
+                                    console.log('Ошибка')
+                                }
+                            )
+                        </code></pre>
+                    </section>
+                    <section>
+                        <p>catch обрабатывает только отказ</p>
+                        <pre><code data-trim>
+                            promise.catch(
+                                (error) => {
+                                    console.log('Ошибка')
+                                }
+                            )
+                        </code></pre>
+                    </section>
+                    <section>
+                        <p>Promise устанавливается на выполнение или отказ единожды</p>
+                            <pre><code data-trim>
+                                let promise = new Promise(function (resolve, reject) {
+                                    resolve('Отдаем результат');
+                                    reject('Или ошибку?')
+                                    console.log('Валидный лог')
+                                });
+                                
+                                promise.then(/* отработает */)
+                                promise.catch(/* НЕ отработает */)
+                            </code></pre>
+                    </section>
+                </section>
+
+                <section>
+                    <section>
+                        <p>Цепочки промисов</p>
+                        <pre><code data-trim>
+                            let promise = new Promise((resolve) => resolve(1))
+
+                            promise
+                                .then((num) => {
+                                    /* выполнится */
+                                    console.log(num); // 1
+                                    return num * 2;
+                                })
+                                .then((num) => {
+                                    /* тоже выполнится */
+                                    console.log(num); // 2
+                                    return num * 2;
+                                })
+                                .then((num) => {
+                                    /* и тут отработает */
+                                    console.log(num); // 4
+                                })
+                        </code></pre>
+                    </section>
+                    <section>
+                        <p>Обработчики неявно возвращают новый promise</p>
+                        <pre><code data-trim>
+                            promise
+                                .then((result) => {
+                                    return 123
+                                    /* 
+                                    неявно
+                                    return new Promise((resolve) => resolve(123))
+                                    */
+                                })
+                                .then((result) => {
+                                    result === 123 // true
+                                    const object = {
+                                        property: 'value'
+                                    }
+                                    return object
+                                })
+                                .then((result) => {
+                                    result.property === 'value' // true
+                                })
+                                .then((result) => {
+                                    result === undefined // true
+                                    return new Promise(/**/) // обернут не будет
+                                })
+                                .then((promise) => {
+
+                                })
+                        </code></pre>
+                    </section>
+                    <section>
+                        <p>Каждый then цепляется к предыдущему - поэтому можно избежать callback hell</p>
+                        <pre><code data-trim>
+                            promise
+                                .then((id) => fetchUser())
+                                .then((user) => fetchRole())
+                                .then((role) => fetchToken())
+                                .then((token) => fetchAccess())
+                                .then((data) => {
+                                    //можем работать
+                                })
+                        </code></pre>
+                    </section>
+                    <section>
+                        <p>Проброс отказа</p>
+                        <pre><code data-trim>
+                            new Promise((_, reject) => reject('error'))
+                                .then(/* не отработает */)
+                                .then(/* не отработает */)
+                                .catch((e) => {
+                                    console.log(e) // 'error'
+                                    return 'somedata'
+                                })
+                                .catch(/* не отработает */)
+                                .then((data) => {
+                                    data === 'somedata' // true
+                                })
+                        </code></pre>
+                    </section>
+                    <section>
+                        <p>Проброс отказа</p>
+                        <pre><code data-trim>
+                            promise
+                                .then(
+                                    () => {
+                                        throw new Error('message')
+                                    },
+                                    () => {/* не отработает */}
+                                )
+                                .then(
+                                    () => {/* не отработает */},
+                                    (error) => {
+                                        // message
+                                    }
+                                )
+                        </code></pre>
+                    </section>
+                    <section>
+                        <p>Обработчик отказа поймает любые ошибки</p>
+                        <pre><code data-trim>
+                            promise
+                                .then(() => undefined.toString()) 
+                                .catch((e) => {
+                                    console.log(e)
+                                    // TypeError: Cannot read properties of undefined (reading 'toString')
+                                }) 
+                                /*
+                                Неявно
+                                .then(() => {
+                                    try{
+                                        undefined.toString()
+                                    }
+                                    catch(e){
+                                        return new Promise((_,rej) => rej(e))
+                                    }	
+                                }) 
+                            */
+                        </code></pre>
+                    </section>
+                    <section>Если что-то может сломаться, всегда лучше поставить catch в конце цепочки</section>
+                    <section>
+                        <p>Что делать если в финальном catch что-то сломается?</p>
+                        <p class="fragment">Эту ошибку поймает сборщик мусора.</p>
+                        <pre><code data-trim>
+                            new Promise((_,reject) => reject('someerror'))
+
+                            window.addEventListener('unhandledrejection', (event) => {
+                                console.log('Необработанная ошибка!')
+                                console.log(event) // PromiseRejectionEvent
+                                console.log(event.reason) // someerror
+                            })
+                        </code></pre>
+                    </section>
+                    <section>
+                        <p>Promise.prototype.finally</p>
+                        <pre><code data-trim>
+                            Promise.resolve(1)
+                                .finally(() => {
+                                    // независимо от успеха или неудачи
+                                    // ничего не получает, но пробрасывает результат через себя
+                                    return 2;
+                                })
+                                .then((value) => {
+                                    console.log(value) // 1
+                                })
+                        </code></pre>
+                    </section>
+                </section>
+
+                <section>
+                    <section>Другие возможности промисов</section>
+                    <section>
+                        <p>Глобальные функции Promise .resolve/.reject</p>
+                        <pre><code data-trim>
+                            Promise.resolve('result') // Promise {&lt;fulfilled&gt;: 'result'}
+                            // равносильно
+                            new Promise((res) => res('result'))
+                            
+                            Promise.reject('error') // Promise {&lt;rejected&gt;: 'error'}
+                            // равносильно
+                            new Promise((_, rej) => rej('error'))
+                        </code></pre>
+                    </section>
+                    <section>
+                        <p>Promise.all</p>
+                        <pre><code data-trim>
+                            Promise.all([fetchPhotos, fetchUsers, fetchContacts])
+                                .then(([photos, users, contacts]) => { 
+                                    // работа с полученными значениями
+                                })
+                                .catch((error) => {
+                                    // обработка первого отказа
+                                })
+                        </code></pre>
+                    </section>
+                    <section>
+                        <p>Promise.race</p>
+                        <pre><code data-trim>
+                            Promise.race([Promise.resolve(1), 2])
+                                .then((val) => console.log(val)) // 1
+
+                            Promise.race([Promise.reject('error'), 2])
+                                .catch((val) => console.log(val)) // 'error'
+                        </code></pre>
+                    </section>
+                    <section>
+                        <p>Promise.allSettled</p>
+                        <pre><code data-trim>
+                            const promise1 = Promise.resolve(1);
+                            const promise2 = new Promise((_, reject) =>
+                                setTimeout(reject, 100, 'error'),
+                            );
+                            const promises = [promise1, promise2];
+
+                            Promise.allSettled(promises).then((results) =>
+                                console.log(results)
+                                /* 
+                                [
+                                    {
+                                        status: 'fulfilled ',
+                                        value: 1,
+                                    },
+                                    {
+                                        status: 'rejected',
+                                        reason: 'error',
+                                    }
+                                ]
+                                */
+                            );
+                        </code></pre>
+                    </section>
+                    <section>
+                        <p>Promise.any</p>
+                        <pre><code data-trim>
+                            const promise1 = Promise.reject('error');
+                            const promise2 = new Promise((resolve) =>
+                                setTimeout(resolve, 100, 2),
+                            );
+                            const promises = [promise1, promise2];
+                            
+                            Promise.any(promises)
+                                .then((value) =>
+                                    console.log(value) // 2
+                                )
+                                .catch((error) =>
+                                    console.log(error) // AggregateError: All promises were rejected
+                                )
+                        </code></pre>
+                    </section>
+                    
+                    <section>
+                        <p>А если промис завис?</p>
+                        <pre><code data-trim>
+                            const promise1 = fetchLongRequest()
+                            const promise2 = new Promise((_, rej) => setTimeout(rej, 3000))
+                            const promises = [promise1, promise2] 
+                            Promise.race(promises)
+                                .then(() => {/* получили данные */})
+                                .catch(() => {/* или отказ по таймеру */})
+                        </code></pre>
+                    </section>
+                </section>
+                <section>
+                    <p>Решаем проблему колбеков</p>
+                    <ul>
+                        <li>Всегда асинхронный код. Избегаем callback hell</li>
+                        <li>Линейный код. Проще писать и рефакторить</li>
+                        <li>Промис одноразовый (проблема доверия)</li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+
+        <script src="dist/reveal.js"></script>
+        <script src="plugin/notes/notes.js"></script>
+        <script src="plugin/markdown/markdown.js"></script>
+        <script src="plugin/highlight/highlight.js"></script>
+        <script>
+            // More info about initialization & config:
+            // - https://revealjs.com/initialization/
+            // - https://revealjs.com/config/
+            Reveal.initialize({
+                hash: true,
+
+                // Learn about plugins: https://revealjs.com/plugins/
+                plugins: [RevealMarkdown, RevealHighlight, RevealNotes],
+            });
+        </script>
+    </body>
 </html>
